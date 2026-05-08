@@ -1,4 +1,4 @@
-#!/Users/jaspreetsingh/Desktop/hr-shortlisting-agent/venv/bin/python3.10
+#!/Users/jaspreetsingh/Desktop/hr-shortlisting-agent/venv/bin/python
 import sys
 from pymupdf.__main__ import main
 if __name__ == '__main__':
