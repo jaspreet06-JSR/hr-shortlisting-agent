@@ -1,593 +1,475 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-
+import plotly.graph_objects as go
+from io import BytesIO
 from fpdf import FPDF
 
 from parsers.pdf_parser import extract_text_from_pdf
 from scoring.matcher import match_skills
 
-# -----------------------------
+# =========================
 # PAGE CONFIG
-# -----------------------------
+# =========================
 
 st.set_page_config(
     page_title="HR Resume Shortlisting Agent",
+    page_icon="📄",
     layout="wide"
 )
 
-# -----------------------------
+# =========================
 # CUSTOM CSS
-# -----------------------------
+# =========================
 
-st.markdown(
-    """
-    <style>
+st.markdown("""
+<style>
+.main {
+    background-color: #0f172a;
+}
 
-    .main {
-        background-color: #0E1117;
-    }
+.stApp {
+    background-color: #0f172a;
+    color: white;
+}
 
-    .title {
-        font-size: 48px;
-        font-weight: bold;
-        color: white;
-        margin-bottom: 10px;
-    }
+.block-container {
+    padding-top: 2rem;
+}
 
-    .subtitle {
-        color: #BBBBBB;
-        margin-bottom: 30px;
-    }
+.metric-card {
+    background-color: #1e293b;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+}
 
-    .card {
-        background-color: #1E1E1E;
-        padding: 20px;
-        border-radius: 15px;
-        margin-bottom: 25px;
-        border: 1px solid #333333;
-    }
+.skill-box {
+    background-color: #14532d;
+    padding: 8px 14px;
+    border-radius: 10px;
+    margin: 5px;
+    display: inline-block;
+    color: white;
+}
 
-    .score-box {
-        padding: 10px;
-        border-radius: 10px;
-        text-align: center;
-        font-size: 22px;
-        font-weight: bold;
-        color: white;
-        background: linear-gradient(90deg, #00C853, #009624);
-    }
+.missing-box {
+    background-color: #7f1d1d;
+    padding: 8px 14px;
+    border-radius: 10px;
+    margin: 5px;
+    display: inline-block;
+    color: white;
+}
+</style>
+""", unsafe_allow_html=True)
 
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# -----------------------------
-# HEADER
-# -----------------------------
-
-st.markdown(
-    '<div class="title">HR Resume Shortlisting Agent</div>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    '<div class="subtitle">AI Powered Resume Ranking & Candidate Evaluation System</div>',
-    unsafe_allow_html=True
-)
-
-# -----------------------------
+# =========================
 # SIDEBAR
-# -----------------------------
+# =========================
 
 st.sidebar.title("Recruiter Settings")
 
-minimum_score = st.sidebar.slider(
+min_score = st.sidebar.slider(
     "Minimum Match Score",
     0,
     100,
     50
 )
 
-# -----------------------------
-# PDF REPORT GENERATOR
-# -----------------------------
+# =========================
+# TITLE
+# =========================
 
-def generate_pdf_report(
-    candidate_name,
-    score,
-    matched_skills,
-    missing_skills,
-    recommendation
-):
+st.title("📄 HR Resume Shortlisting Agent")
+st.caption("AI Powered Candidate Screening Dashboard")
 
-    pdf = FPDF()
-
-    pdf.add_page()
-
-    pdf.set_font("Helvetica", "B", 18)
-    pdf.cell(200, 10, "Candidate Evaluation Report", ln=True)
-
-    pdf.ln(10)
-
-    pdf.set_font("Helvetica", size=12)
-
-    pdf.cell(200, 10, f"Candidate: {candidate_name}", ln=True)
-    pdf.cell(200, 10, f"Score: {score}%", ln=True)
-    pdf.cell(200, 10, f"Recommendation: {recommendation}", ln=True)
-
-    pdf.ln(10)
-
-    pdf.set_font("Helvetica", "B", 14)
-    pdf.cell(200, 10, "Matched Skills", ln=True)
-
-    pdf.set_font("Helvetica", size=12)
-
-    for skill in matched_skills:
-        pdf.cell(200, 10, f"- {skill}", ln=True)
-
-    pdf.ln(5)
-
-    pdf.set_font("Helvetica", "B", 14)
-    pdf.cell(200, 10, "Missing Skills", ln=True)
-
-    pdf.set_font("Helvetica", size=12)
-
-    for skill in missing_skills:
-        pdf.cell(200, 10, f"- {skill}", ln=True)
-
-    pdf_output = pdf.output(dest="S")
-
-    return bytes(pdf_output)
-
-# -----------------------------
+# =========================
 # FILE UPLOADS
-# -----------------------------
+# =========================
 
-col1, col2 = st.columns(2)
+jd_file = st.file_uploader(
+    "Upload Job Description",
+    type=["pdf"]
+)
 
-with col1:
+resume_files = st.file_uploader(
+    "Upload Candidate Resumes",
+    type=["pdf"],
+    accept_multiple_files=True
+)
 
-    jd_file = st.file_uploader(
-        "Upload Job Description (PDF)",
-        type=["pdf"]
-    )
-
-with col2:
-
-    resume_files = st.file_uploader(
-        "Upload Candidate Resumes",
-        type=["pdf"],
-        accept_multiple_files=True
-    )
-
-# -----------------------------
-# SKILLS DATABASE
-# -----------------------------
+# =========================
+# SKILL DATABASE
+# =========================
 
 SKILLS_DB = [
     "Python",
+    "Java",
+    "C++",
     "Machine Learning",
     "Deep Learning",
     "TensorFlow",
     "PyTorch",
-    "NLP",
     "SQL",
+    "NLP",
     "Data Analysis",
     "Communication",
     "Leadership",
-    "Java",
-    "C++",
     "React",
     "AWS",
     "Docker",
+    "Kubernetes",
     "Flask",
     "Django",
-    "Kubernetes",
-    "Git",
-    "Linux"
+    "Git"
 ]
 
-# -----------------------------
-# PROCESS JOB DESCRIPTION
-# -----------------------------
+# =========================
+# PDF REPORT FUNCTION
+# =========================
 
-if jd_file:
+def generate_pdf(candidate_name, score, matched, missing):
+
+    pdf = FPDF()
+    pdf.add_page()
+
+    pdf.set_font("Arial", "B", 18)
+    pdf.cell(200, 10, txt="Candidate Evaluation Report", ln=True)
+
+    pdf.ln(10)
+
+    pdf.set_font("Arial", size=12)
+
+    pdf.cell(200, 10, txt=f"Candidate: {candidate_name}", ln=True)
+    pdf.cell(200, 10, txt=f"Match Score: {score:.2f}%", ln=True)
+
+    pdf.ln(10)
+
+    pdf.multi_cell(
+        0,
+        10,
+        txt=f"Matched Skills:\n{', '.join(matched)}"
+    )
+
+    pdf.ln(5)
+
+    pdf.multi_cell(
+        0,
+        10,
+        txt=f"Missing Skills:\n{', '.join(missing)}"
+    )
+
+    pdf_output = BytesIO()
+    pdf.output(pdf_output)
+
+    return pdf_output.getvalue()
+
+# =========================
+# PROCESSING
+# =========================
+
+if jd_file and resume_files:
+
+    # =========================
+    # JD EXTRACTION
+    # =========================
 
     jd_text = extract_text_from_pdf(jd_file)
 
-    jd_skills = match_skills(
-        jd_text,
-        SKILLS_DB
+    st.subheader("📌 Extracted Job Description")
+
+    st.text_area(
+        "JD Text",
+        jd_text[:3000],
+        height=250
     )
 
-    st.success("Job Description Uploaded Successfully")
+    # =========================
+    # EXTRACT JD SKILLS
+    # =========================
 
-    with st.expander("View Extracted JD Text"):
-        st.write(jd_text)
+    jd_skills = []
 
-    st.subheader("JD Skills Detected")
+    for skill in SKILLS_DB:
+        if skill.lower() in jd_text.lower():
+            jd_skills.append(skill)
 
-    skill_cols = st.columns(4)
+    st.subheader("🧠 JD Skills Detected")
 
-    for idx, skill in enumerate(jd_skills):
-        skill_cols[idx % 4].success(skill)
+    for skill in jd_skills:
+        st.markdown(
+            f"<span class='skill-box'>{skill}</span>",
+            unsafe_allow_html=True
+        )
 
-    # -----------------------------
-    # PROCESS RESUMES
-    # -----------------------------
+    st.divider()
 
-    if resume_files:
+    leaderboard = []
 
-        leaderboard = []
+    # =========================
+    # PROCESS EACH RESUME
+    # =========================
+
+    for idx, resume in enumerate(resume_files):
+
+        st.header(f"👤 Candidate: {resume.name}")
+
+        resume_text = extract_text_from_pdf(resume)
+
+        with st.expander("View Extracted Resume Text"):
+            st.text_area(
+                f"Resume Text {idx}",
+                resume_text[:3000],
+                height=250
+            )
+
+        # =========================
+        # SKILL MATCHING
+        # =========================
+
+        matched_skills, missing_skills, score = match_skills(
+            jd_skills,
+            resume_text
+        )
+
+        # =========================
+        # FILTER
+        # =========================
+
+        if score < min_score:
+
+            st.warning(
+                f"Candidate filtered out. Match Score below {min_score}%"
+            )
+
+            continue
+
+        # =========================
+        # METRICS
+        # =========================
+
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric(
+            "Match Score",
+            f"{score:.2f}%"
+        )
+
+        col2.metric(
+            "Matched Skills",
+            len(matched_skills)
+        )
+
+        col3.metric(
+            "Missing Skills",
+            len(missing_skills)
+        )
+
+        # =========================
+        # MATCHED SKILLS
+        # =========================
+
+        st.subheader("✅ Matched Skills")
+
+        for skill in matched_skills:
+            st.markdown(
+                f"<span class='skill-box'>{skill}</span>",
+                unsafe_allow_html=True
+            )
+
+        # =========================
+        # MISSING SKILLS
+        # =========================
+
+        st.subheader("❌ Missing Skills")
+
+        for skill in missing_skills:
+            st.markdown(
+                f"<span class='missing-box'>{skill}</span>",
+                unsafe_allow_html=True
+            )
+
+        # =========================
+        # PIE CHART
+        # =========================
+
+        pie_chart = px.pie(
+            names=["Matched", "Missing"],
+            values=[
+                len(matched_skills),
+                len(missing_skills)
+            ],
+            title="Skill Match Distribution"
+        )
+
+        st.plotly_chart(
+            pie_chart,
+            use_container_width=True,
+            key=f"pie_chart_{idx}"
+        )
+
+        # =========================
+        # RADAR CHART
+        # =========================
+
+        radar_categories = jd_skills
+
+        radar_values = []
+
+        for skill in radar_categories:
+            if skill in matched_skills:
+                radar_values.append(1)
+            else:
+                radar_values.append(0)
+
+        radar_chart = go.Figure()
+
+        radar_chart.add_trace(go.Scatterpolar(
+            r=radar_values,
+            theta=radar_categories,
+            fill='toself',
+            name=resume.name
+        ))
+
+        radar_chart.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True,
+                    range=[0, 1]
+                )
+            ),
+            showlegend=False,
+            title="Candidate Skill Radar"
+        )
+
+        st.plotly_chart(
+            radar_chart,
+            use_container_width=True,
+            key=f"radar_chart_{idx}"
+        )
+
+        # =========================
+        # PDF REPORT
+        # =========================
+
+        pdf_data = generate_pdf(
+            resume.name,
+            score,
+            matched_skills,
+            missing_skills
+        )
+
+        st.download_button(
+            label="📥 Download PDF Report",
+            data=pdf_data,
+            file_name=f"{resume.name}_report.pdf",
+            mime="application/pdf",
+            key=f"pdf_download_{idx}"
+        )
+
+        # =========================
+        # LEADERBOARD DATA
+        # =========================
+
+        leaderboard.append({
+            "Candidate": resume.name,
+            "Score": round(score, 2),
+            "Matched Skills": ", ".join(matched_skills),
+            "Missing Skills": ", ".join(missing_skills)
+        })
 
         st.divider()
 
-        st.header("Candidate Analysis")
-
-        for resume in resume_files:
-
-            resume_text = extract_text_from_pdf(resume)
-
-            candidate_skills = match_skills(
-                resume_text,
-                SKILLS_DB
-            )
-
-            matched_skills = list(
-                set(jd_skills).intersection(candidate_skills)
-            )
-
-            missing_skills = list(
-                set(jd_skills) - set(candidate_skills)
-            )
-
-            # -----------------------------
-            # SCORING ENGINE
-            # -----------------------------
-
-            if len(jd_skills) > 0:
-
-                skills_score = (
-                    len(matched_skills) / len(jd_skills)
-                ) * 100
-
-                experience_score = max(skills_score - 10, 0)
-                projects_score = max(skills_score - 15, 0)
-                education_score = max(skills_score - 5, 0)
-
-                final_score = round(
-                    (
-                        skills_score * 0.5 +
-                        experience_score * 0.2 +
-                        projects_score * 0.2 +
-                        education_score * 0.1
-                    ),
-                    2
-                )
-
-            else:
-                final_score = 0
-
-            # -----------------------------
-            # FILTER
-            # -----------------------------
-
-            if final_score < minimum_score:
-                continue
-
-            # -----------------------------
-            # RECOMMENDATION
-            # -----------------------------
-
-            if final_score >= 85:
-                recommendation = "Highly Recommended"
-
-            elif final_score >= 70:
-                recommendation = "Recommended"
-
-            elif final_score >= 50:
-                recommendation = "Moderate Match"
-
-            else:
-                recommendation = "Weak Match"
-
-            # -----------------------------
-            # SAVE FOR LEADERBOARD
-            # -----------------------------
-
-            leaderboard.append({
-                "Candidate": resume.name,
-                "Score": final_score,
-                "Matched Skills": len(matched_skills),
-                "Recommendation": recommendation
-            })
-
-            # -----------------------------
-            # CANDIDATE CARD
-            # -----------------------------
-
-            st.markdown(
-                '<div class="card">',
-                unsafe_allow_html=True
-            )
-
-            colA, colB = st.columns([3, 1])
-
-            with colA:
-                st.subheader(f"Candidate: {resume.name}")
-
-            with colB:
-                st.markdown(
-                    f'<div class="score-box">{final_score}%</div>',
-                    unsafe_allow_html=True
-                )
-
-            st.progress(final_score / 100)
-
-            tabs = st.tabs([
-                "Matched Skills",
-                "Missing Skills",
-                "Recommendation",
-                "Resume Text"
-            ])
-
-            # -----------------------------
-            # MATCHED SKILLS
-            # -----------------------------
-
-            with tabs[0]:
-
-                if matched_skills:
-
-                    for skill in matched_skills:
-                        st.success(skill)
-
-                else:
-                    st.warning("No matched skills")
-
-            # -----------------------------
-            # MISSING SKILLS
-            # -----------------------------
-
-            with tabs[1]:
-
-                if missing_skills:
-
-                    for skill in missing_skills:
-                        st.error(skill)
-
-                else:
-                    st.success("No missing skills")
-
-            # -----------------------------
-            # RECOMMENDATION TAB
-            # -----------------------------
-
-            with tabs[2]:
-
-                st.info(recommendation)
-
-                st.write(
-                    f"This candidate matched "
-                    f"{len(matched_skills)} "
-                    f"out of {len(jd_skills)} required skills."
-                )
-
-            # -----------------------------
-            # RESUME TEXT
-            # -----------------------------
-
-            with tabs[3]:
-
-                with st.expander("View Full Resume Text"):
-                    st.write(resume_text)
-
-            # -----------------------------
-            # PIE CHART
-            # -----------------------------
-
-            pie_df = pd.DataFrame({
-                "Category": ["Matched", "Missing"],
-                "Count": [
-                    len(matched_skills),
-                    len(missing_skills)
-                ]
-            })
-
-            pie_chart = px.pie(
-                pie_df,
-                names="Category",
-                values="Count",
-                title="Skill Match Distribution"
-            )
-
-            st.plotly_chart(
-                pie_chart,
-                use_container_width=True,
-                key="pie_chart_1"
-            )
-
-            # -----------------------------
-            # RADAR CHART
-            # -----------------------------
-
-            radar_df = pd.DataFrame(dict(
-                r=[
-                    final_score,
-                    max(final_score - 10, 0),
-                    max(final_score - 15, 0),
-                    max(final_score - 5, 0),
-                    max(final_score - 12, 0)
-                ],
-                theta=[
-                    "Skills",
-                    "Experience",
-                    "Projects",
-                    "Education",
-                    "Communication"
-                ]
-            ))
-
-            radar_chart = px.line_polar(
-                radar_df,
-                r='r',
-                theta='theta',
-                line_close=True,
-                title='Candidate Competency Radar'
-            )
-
-            radar_chart.update_traces(fill='toself')
-
-            st.plotly_chart(
-                radar_chart,
-                use_container_width=True,
-                key="radar_1"
-            )
-
-            # -----------------------------
-            # DOWNLOAD REPORT
-            # -----------------------------
-
-            pdf_data = generate_pdf_report(
-                resume.name,
-                final_score,
-                matched_skills,
-                missing_skills,
-                recommendation
-            )
-
-            st.download_button(
-                label="Download PDF Report",
-                data=pdf_data,
-                file_name=f"{resume.name}_report.pdf",
-                mime="application/pdf"
-            )
-
-            st.markdown(
-                '</div>',
-                unsafe_allow_html=True
-            )
-
-        # -----------------------------
-        # LEADERBOARD
-        # -----------------------------
-
-        if leaderboard:
-
-            st.divider()
-
-            st.header("Candidate Leaderboard")
-
-            leaderboard_df = pd.DataFrame(leaderboard)
-
-            leaderboard_df = leaderboard_df.sort_values(
-                by="Score",
-                ascending=False
-            )
-
-            leaderboard_df.index = range(
-                1,
-                len(leaderboard_df) + 1
-            )
-
-            st.dataframe(
-                leaderboard_df,
-                use_container_width=True
-            )
-
-            # -----------------------------
-            # EXPORT CSV
-            # -----------------------------
-
-            csv_data = leaderboard_df.to_csv(index=False)
-
-            st.download_button(
-                label="Export Leaderboard CSV",
-                data=csv_data,
-                file_name="candidate_leaderboard.csv",
-                mime="text/csv"
-            )
-
-            # -----------------------------
-            # BAR CHART
-            # -----------------------------
-
-            st.subheader("Candidate Score Comparison")
-
-            bar_chart = px.bar(
-                leaderboard_df,
-                x="Candidate",
-                y="Score",
-                text="Score",
-                title="Resume Ranking Scores"
-            )
-
-            st.plotly_chart(
-                bar_chart,
-                use_container_width=True,
-                key="bar_1"
-            )
-
-            # -----------------------------
-            # RECRUITER ANALYTICS
-            # -----------------------------
-
-            st.divider()
-
-            st.header("Recruiter Analytics Dashboard")
-
-            analytics_col1, analytics_col2, analytics_col3 = st.columns(3)
-
-            average_score = round(
-                leaderboard_df["Score"].mean(),
-                2
-            )
-
-            highest_score = leaderboard_df["Score"].max()
-
-            selected_candidates = len(
-                leaderboard_df[
-                    leaderboard_df["Score"] >= 70
-                ]
-            )
-
-            with analytics_col1:
-
-                st.metric(
-                    "Average Candidate Score",
-                    f"{average_score}%"
-                )
-
-            with analytics_col2:
-
-                st.metric(
-                    "Highest Candidate Score",
-                    f"{highest_score}%"
-                )
-
-            with analytics_col3:
-
-                st.metric(
-                    "Recommended Candidates",
-                    selected_candidates
-                )
-
-            # -----------------------------
-            # TOP CANDIDATE
-            # -----------------------------
-
-            top_candidate = leaderboard_df.iloc[0]
-
-            st.success(
-                f"🏆 Top Candidate: "
-                f"{top_candidate['Candidate']} "
-                f"| Score: {top_candidate['Score']}%"
-            )
-
-else:
-
-    st.info(
-        "Upload Job Description and Candidate Resumes to Begin"
-    )
+    # =========================
+    # FINAL LEADERBOARD
+    # =========================
+
+    if leaderboard:
+
+        st.header("🏆 Candidate Leaderboard")
+
+        leaderboard_df = pd.DataFrame(leaderboard)
+
+        leaderboard_df = leaderboard_df.sort_values(
+            by="Score",
+            ascending=False
+        )
+
+        st.dataframe(
+            leaderboard_df,
+            use_container_width=True
+        )
+
+        # =========================
+        # BAR CHART
+        # =========================
+
+        bar_chart = px.bar(
+            leaderboard_df,
+            x="Candidate",
+            y="Score",
+            title="Candidate Ranking"
+        )
+
+        st.plotly_chart(
+            bar_chart,
+            use_container_width=True,
+            key="leaderboard_bar_chart"
+        )
+
+        # =========================
+        # CSV EXPORT
+        # =========================
+
+        csv = leaderboard_df.to_csv(index=False)
+
+        st.download_button(
+            label="📥 Export CSV",
+            data=csv,
+            file_name="candidate_rankings.csv",
+            mime="text/csv",
+            key="csv_download"
+        )
+
+        # =========================
+        # RECRUITER ANALYTICS
+        # =========================
+
+        st.header("📊 Recruiter Analytics Dashboard")
+
+        avg_score = leaderboard_df["Score"].mean()
+
+        top_score = leaderboard_df["Score"].max()
+
+        total_candidates = len(leaderboard_df)
+
+        c1, c2, c3 = st.columns(3)
+
+        c1.metric(
+            "Average Score",
+            f"{avg_score:.2f}%"
+        )
+
+        c2.metric(
+            "Top Score",
+            f"{top_score:.2f}%"
+        )
+
+        c3.metric(
+            "Candidates",
+            total_candidates
+        )
+
+        analytics_chart = px.histogram(
+            leaderboard_df,
+            x="Score",
+            nbins=10,
+            title="Candidate Score Distribution"
+        )
+
+        st.plotly_chart(
+            analytics_chart,
+            use_container_width=True,
+            key="analytics_histogram_chart"
+        )
