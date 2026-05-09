@@ -26,83 +26,53 @@ st.set_page_config(
 st.markdown("""
 <style>
 
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-}
-
-.main {
-    background: linear-gradient(135deg, #071120, #0b1f3a);
-    color: white;
-}
-
-section[data-testid="stSidebar"] {
-    background: #111827;
-    border-right: 1px solid #1f2937;
-    border-radius: 0 24px 24px 0;
-}
-
-.block-container {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-    max-width: 1400px;
-}
-
-h1, h2, h3 {
-    color: white;
-    font-weight: 700;
-}
-
-.card {
-    background: rgba(255,255,255,0.04);
-    padding: 25px;
-    border-radius: 24px;
-    margin-bottom: 25px;
-    border: 1px solid rgba(255,255,255,0.05);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-}
-
 .skill-pill {
-    display: inline-block;
-    padding: 10px 18px;
-    border-radius: 999px;
-    margin: 6px;
-    font-weight: 600;
-    font-size: 14px;
+    display:inline-block;
+    padding:10px 20px;
+    margin:8px 8px 8px 0;
+    border-radius:18px;
+
+    background: linear-gradient(
+        135deg,
+        #134e4a,
+        #115e59
+    );
+
+    color:white;
+    font-weight:600;
+    font-size:15px;
+
+    border:1px solid rgba(255,255,255,0.08);
+
+    box-shadow:
+        0 4px 12px rgba(0,0,0,0.25);
+
+    transition:0.3s ease;
 }
 
-.skill-match {
-    background: linear-gradient(135deg, #00c853, #00e676);
-    color: white;
+.skill-pill:hover {
+    transform:translateY(-2px);
+    background: linear-gradient(
+        135deg,
+        #0f766e,
+        #115e59
+    );
 }
 
-.skill-missing {
-    background: linear-gradient(135deg, #ff1744, #ff5252);
-    color: white;
+.match-pill {
+    background: linear-gradient(
+        135deg,
+        #14532d,
+        #166534
+    );
 }
 
-.stButton>button {
-    border-radius: 14px;
-    background: linear-gradient(135deg,#2563eb,#4f46e5);
-    color: white;
-    border: none;
-    padding: 12px 22px;
-    font-weight: 600;
-}
-
-.stDownloadButton>button {
-    border-radius: 14px;
-    background: linear-gradient(135deg,#059669,#10b981);
-    color: white;
-    border: none;
-    padding: 12px 22px;
-    font-weight: 600;
-}
-
-[data-testid="stMetric"] {
-    background: rgba(255,255,255,0.04);
-    padding: 20px;
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.06);
+.missing-pill {
+    background: linear-gradient(
+        135deg,
+        #7f1d1d,
+        #991b1b
+    );
 }
 
 </style>
@@ -386,7 +356,7 @@ if jd_file and resume_files:
             txt=f"Missing Skills: {', '.join(missing_skills)}"
         )
 
-        pdf_output = pdf.output(dest='S').encode('latin-1')
+        pdf_output = bytes(pdf.output(dest='S'))
 
         st.download_button(
             label="📄 Download PDF Report",
