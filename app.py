@@ -405,7 +405,8 @@ if jd_file:
 
             st.plotly_chart(
                 pie_chart,
-                use_container_width=True
+                use_container_width=True,
+                key="pie_chart_1"
             )
 
             # -----------------------------
@@ -441,7 +442,8 @@ if jd_file:
 
             st.plotly_chart(
                 radar_chart,
-                use_container_width=True
+                use_container_width=True,
+                key="radar_1"
             )
 
             # -----------------------------
@@ -524,7 +526,8 @@ if jd_file:
 
             st.plotly_chart(
                 bar_chart,
-                use_container_width=True
+                use_container_width=True,
+                key="bar_1"
             )
 
             # -----------------------------
