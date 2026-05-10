@@ -48,11 +48,11 @@ Uses a 5-dimension evaluation rubric:
 ![Analytics](screenshots/analytics.png)
 
 ## Recruiter Override
-![Recruiter Override](screenshots/recruiter override.png)
+![RecruiterOverride](screenshots/recruiter override.png)
 
 ## 🎥 Demo Video
 
-[Watch Demo](YOUR_VIDEO_LINK)
+[![Watch Demo](screenshots/dashboard.png)](https://drive.google.com/file/d/1oA8avM172nZvSmIcdunnEOPOtan0t0pc/view?usp=share_link)
 
 # 📊 Dashboard Features
 
