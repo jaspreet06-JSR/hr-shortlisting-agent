@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -802,7 +803,9 @@ if jd_file and resume_files:
 
         st.markdown("## 📂 Recruiter Decision Logs")
 
-        import os
+        # Ensure recruiter_logs directory exists
+        if not os.path.exists("recruiter_logs"):
+            os.makedirs("recruiter_logs")
 
         log_files = os.listdir("recruiter_logs")
 

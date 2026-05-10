@@ -36,6 +36,9 @@ Uses a 5-dimension evaluation rubric:
 | Communication Quality | 10% |
 
 ---
+## 🎥 Demo Video
+
+[Watch Demo](YOUR_VIDEO_LINK)
 
 # 📊 Dashboard Features
 
