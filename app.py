@@ -4,6 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 from datetime import datetime
+from datetime import datetime
 from fpdf import FPDF
 
 from scoring.rubric_scorer import evaluate_candidate
@@ -546,6 +547,46 @@ if jd_file and resume_files:
 
         st.divider()
 
+        st.markdown("### 🧑‍💼 Recruiter Review")
+
+        review_col1, review_col2 = st.columns([1, 2])
+
+        with review_col1:
+            recruiter_decision = st.selectbox(
+                "Decision",
+                ["Shortlist", "Hold", "Reject"],
+                key=f"decision_{selected_candidate_name}"
+            )
+
+        with review_col2:
+            recruiter_notes = st.text_area(
+                "Recruiter Notes",
+                placeholder="Add recruiter comments here...",
+                key=f"notes_{selected_candidate_name}"
+            )
+
+        save_review = st.button(
+            "💾 Save Review",
+            key=f"save_review_{selected_candidate_name}"
+        )
+
+        if save_review:
+
+            review_data = {
+                "candidate": selected_candidate_name,
+                "score": round(final_score, 2),
+                "decision": recruiter_decision,
+                "notes": recruiter_notes,
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+
+            log_path = f"recruiter_logs/{selected_candidate_name}.json"
+
+            with open(log_path, "w") as f:
+                json.dump(review_data, f, indent=4)
+
+            st.success("Recruiter review saved successfully.")
+
         # =================================================
         # PDF REPORT
         # =================================================
@@ -705,6 +746,31 @@ if jd_file and resume_files:
             "leaderboard.csv",
             "text/csv"
         )
+
+        st.divider()
+
+        st.markdown("## 📂 Recruiter Decision Logs")
+
+        import os
+
+        log_files = os.listdir("recruiter_logs")
+
+        if log_files:
+
+            for log_file in log_files:
+
+                with open(f"recruiter_logs/{log_file}", "r") as f:
+                    data = json.load(f)
+
+                with st.expander(f"📄 {data['candidate']}"):
+
+                   st.write(f"**Decision:** {data['decision']}")
+                   st.write(f"**Score:** {data['score']}")
+                   st.write(f"**Notes:** {data['notes']}")
+                   st.write(f"**Timestamp:** {data['timestamp']}")
+
+        else:
+            st.info("No recruiter logs available.")
 
     # =====================================================
     # TAB 3
