@@ -5,7 +5,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 from datetime import datetime
-from datetime import datetime
 from fpdf import FPDF
 
 from scoring.rubric_scorer import evaluate_candidate
@@ -312,14 +311,15 @@ if jd_file and resume_files:
         c["name"] for c in processed_candidates
     ]
 
-    selected_candidate_name = st.selectbox(
+    selected_candidate = st.selectbox(
         "Select Candidate",
-        candidate_names
+        processed_candidates,
+        format_func=lambda x: x["name"]
     )
 
     selected_candidate = next(
         c for c in processed_candidates
-        if c["name"] == selected_candidate_name
+        if c["name"] == selected_candidate["name"]
     )
 
     matched_skills = selected_candidate["matched_skills"]
@@ -349,7 +349,7 @@ if jd_file and resume_files:
 
         st.markdown(f"""
         <div class="card">
-        <h2>👤 {selected_candidate_name}</h2>
+        <h2>👤 {selected_candidate['name']}</h2>
         </div>
         """, unsafe_allow_html=True)
 
@@ -409,6 +409,9 @@ if jd_file and resume_files:
             rubric_df,
             use_container_width=True
         )
+        
+        candidate_name = selected_candidate["name"]
+
         st.markdown("### 👨‍💼 Recruiter Override")
 
         override_decision = st.selectbox(
@@ -420,30 +423,33 @@ if jd_file and resume_files:
                 "Reject"
             ],
             index=2,
-            key=f"decision_{candidate_names}"
+            key=f"override_decision_{candidate_name}"
         )
 
         recruiter_notes = st.text_area(
             "Recruiter Notes",
             placeholder="Add recruiter feedback or override reason...",
-            key=f"notes_{candidate_names}"
+            key=f"override_notes_{candidate_name}"
         )
 
         if st.button(
-           f"Save Recruiter Review - {candidate_names}",
-           key=f"save_review_{candidate_names}"
+            f"💾 Save Recruiter Review - {candidate_name}",
+            key=f"override_save_btn_{candidate_name}"
         ):
 
             review_data = {
-                "candidate": candidate_names,
+                "candidate": candidate_name,
                 "ai_recommendation": recommendation,
                 "recruiter_decision": override_decision,
-                "score": final_score,
+                "score": round(final_score, 2),
                 "notes": recruiter_notes,
-                "timestamp": str(datetime.now())
-            }
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+           }
 
-            filename = f"recruiter_logs/{candidate_names.replace(' ', '_')}.json"
+            if not os.path.exists("recruiter_logs"):
+               os.makedirs("recruiter_logs")
+
+            filename = f"recruiter_logs/{candidate_name.replace(' ', '_')}.json"
 
             with open(filename, "w") as f:
                 json.dump(review_data, f, indent=4)
@@ -454,9 +460,9 @@ if jd_file and resume_files:
                 st.download_button(
                     label="⬇ Download Review JSON",
                     data=f,
-                    file_name=f"{candidate_names.replace(' ', '_')}_review.json",
+                    file_name=f"{candidate_name.replace(' ', '_')}_review.json",
                     mime="application/json",
-                    key=f"download_review_{candidate_names}"
+                    key=f"download_override_{candidate_name}"
                 )
 
         # =================================================
@@ -603,7 +609,9 @@ if jd_file and resume_files:
 
         st.divider()
 
-        st.markdown("### 🧑‍💼 Recruiter Review")
+        st.markdown("### 👨‍💼 Recruiter Review")
+
+        candidate_name = selected_candidate["name"]
 
         review_col1, review_col2 = st.columns([1, 2])
 
@@ -611,37 +619,50 @@ if jd_file and resume_files:
             recruiter_decision = st.selectbox(
                 "Decision",
                 ["Shortlist", "Hold", "Reject"],
-                key=f"decision_{selected_candidate_name}"
+                key=f"decision_{candidate_name}"
             )
 
         with review_col2:
             recruiter_notes = st.text_area(
                 "Recruiter Notes",
                 placeholder="Add recruiter comments here...",
-                key=f"notes_{selected_candidate_name}"
-            )
+                key=f"notes_{candidate_name}"
+             )
 
         save_review = st.button(
-            "💾 Save Review",
-            key=f"save_review_{selected_candidate_name}"
+            f"💾 Save Review - {candidate_name}",
+            key=f"save_review_btn_{candidate_name}"
         )
 
         if save_review:
 
             review_data = {
-                "candidate": selected_candidate_name,
+                "candidate": candidate_name,
                 "score": round(final_score, 2),
                 "decision": recruiter_decision,
                 "notes": recruiter_notes,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
 
-            log_path = f"recruiter_logs/{selected_candidate_name}.json"
+            # Create folder if not exists
+            if not os.path.exists("recruiter_logs"):
+                os.makedirs("recruiter_logs")
+
+            log_path = f"recruiter_logs/{candidate_name.replace(' ', '_')}.json"
 
             with open(log_path, "w") as f:
                 json.dump(review_data, f, indent=4)
 
             st.success("Recruiter review saved successfully.")
+
+            with open(log_path, "r") as f:
+               st.download_button(
+                   label="⬇ Download Review JSON",
+                   data=f,
+                   file_name=f"{candidate_name.replace(' ', '_')}_review.json",
+                   mime="application/json",
+                   key=f"download_review_{candidate_name}"
+               )
 
         # =================================================
         # PDF REPORT
@@ -673,7 +694,7 @@ if jd_file and resume_files:
         pdf.cell(
             200,
             10,
-            txt=f"Candidate: {selected_candidate_name}",
+            txt=f"Candidate: {selected_candidate['name']}",
             ln=True
         )
 
@@ -715,7 +736,7 @@ if jd_file and resume_files:
         st.download_button(
             label="📄 Download PDF Report",
             data=pdf_output,
-            file_name=f"{selected_candidate_name}.pdf",
+            file_name=f"{selected_candidate['name'].replace(' ', '_')}.pdf",
             mime="application/pdf"
         )
 
