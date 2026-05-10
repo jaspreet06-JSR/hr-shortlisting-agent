@@ -173,8 +173,8 @@ resume_files = st.file_uploader(
 )
 
 linkedin_text = st.text_area(
-    "🔗 Optional LinkedIn / Portfolio Text",
-    placeholder="Paste LinkedIn summary, portfolio description, GitHub bio, achievements, etc.",
+    "Optional Candidate LinkedIn / Portfolio Summary",
+    placeholder="Paste candidate LinkedIn About section, portfolio summary, GitHub bio, achievements, etc.",
     height=120
 )
 
