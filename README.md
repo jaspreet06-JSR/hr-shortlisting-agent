@@ -95,6 +95,9 @@ Uses a 5-dimension evaluation rubric:
 8. Export reports
 
 ---
+# 🏛️ System Architecture
+
+![Architecture Diagram](diagrams/architecture.png)
 
 # ⚙️ Tech Stack
 
