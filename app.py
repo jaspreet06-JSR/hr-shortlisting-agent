@@ -843,10 +843,12 @@ if jd_file and resume_files:
 
                 with st.expander(f"📄 {data['candidate']}"):
 
-                   st.write(f"**Decision:** {data['decision']}")
-                   st.write(f"**Score:** {data['score']}")
-                   st.write(f"**Notes:** {data['notes']}")
-                   st.write(f"**Timestamp:** {data['timestamp']}")
+                   decision = data.get("decision", data.get("recruiter_decision", "N/A"))
+
+                   st.write(f"**Decision:** {decision}")
+                   st.write(f"**Score:** {data.get('score', 'N/A')}")
+                   st.write(f"**Notes:** {data.get('notes', 'N/A')}")
+                   st.write(f"**Timestamp:** {data.get('timestamp', 'N/A')}")
 
         else:
             st.info("No recruiter logs available.")
