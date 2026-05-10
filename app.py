@@ -368,8 +368,12 @@ if jd_file and resume_files:
         with col3:
             st.metric("Recommendation", recommendation)
 
-        with col4:
-            st.metric("Profile Bonus", f"{profile_bonus:.1f} pts")    
+        if profile_bonus > 0:
+            with col4:
+                st.metric(
+                    "Profile Bonus",
+                    f"+{profile_bonus:.1f} pts"
+                )    
 
         st.divider()
 
