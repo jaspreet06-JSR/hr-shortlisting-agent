@@ -2,11 +2,13 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import json
+from datetime import datetime
 from fpdf import FPDF
 
+from scoring.rubric_scorer import evaluate_candidate
 from parsers.pdf_parser import extract_text_from_pdf
 from scoring.matcher import match_skills
-
 # =========================================================
 # PAGE CONFIG
 # =========================================================
@@ -226,10 +228,20 @@ if jd_file and resume_files:
             resume_file
         )
 
-        matched_skills, missing_skills, score = cached_match_skills(
+        matched_skills, missing_skills, score = match_skills(
             jd_skills,
-            resume_text
+            resume_text,
         )
+        rubric_result = evaluate_candidate(
+            jd_skills,
+            matched_skills,
+            resume_text,
+            jd_text
+        )
+        final_score = rubric_result["total_score"]
+        recommendation = rubric_result["recommendation"]
+        dimension_scores = rubric_result["scores"]
+        justifications = rubric_result["justifications"]
 
         if score < min_score:
             continue
@@ -298,30 +310,97 @@ if jd_file and resume_files:
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            st.markdown(f"""
-            <div class="metric-card">
-            <h4>Match Score</h4>
-            <h2>{score:.1f}%</h2>
-            </div>
-            """, unsafe_allow_html=True)
+            st.metric("Final Score", f"{final_score}%")
 
         with col2:
-            st.markdown(f"""
-            <div class="metric-card">
-            <h4>Matched Skills</h4>
-            <h2>{len(matched_skills)}</h2>
-            </div>
-            """, unsafe_allow_html=True)
+            st.metric("Matched Skills", len(matched_skills))
 
         with col3:
-            st.markdown(f"""
-            <div class="metric-card">
-            <h4>Missing Skills</h4>
-            <h2>{len(missing_skills)}</h2>
-            </div>
-            """, unsafe_allow_html=True)
+            st.metric("Recommendation", recommendation)
 
         st.divider()
+
+        st.markdown("### 📊 Rubric Evaluation")
+
+        rubric_data = {
+            "Dimension": [
+                "Skills Match",
+                "Experience Relevance",
+                "Education & Certs",
+                "Projects",
+                "Communication"
+            ],
+            "Score (/10)": [
+                dimension_scores["skills"],
+                dimension_scores["experience"],
+                dimension_scores["education"],
+                dimension_scores["projects"],
+                dimension_scores["communication"]
+            ],
+            "Justification": [
+                justifications["skills"],
+                justifications["experience"],
+                justifications["education"],
+                justifications["projects"],
+                justifications["communication"]
+            ]
+        }
+
+        rubric_df = pd.DataFrame(rubric_data)
+
+        st.dataframe(
+            rubric_df,
+            use_container_width=True
+        )
+        st.markdown("### 👨‍💼 Recruiter Override")
+
+        override_decision = st.selectbox(
+            "Recruiter Decision",
+            [
+                "Strong Hire",
+                "Hire",
+                "Consider",
+                "Reject"
+            ],
+            index=2,
+            key=f"decision_{candidate_names}"
+        )
+
+        recruiter_notes = st.text_area(
+            "Recruiter Notes",
+            placeholder="Add recruiter feedback or override reason...",
+            key=f"notes_{candidate_names}"
+        )
+
+        if st.button(
+           f"Save Recruiter Review - {candidate_names}",
+           key=f"save_review_{candidate_names}"
+        ):
+
+            review_data = {
+                "candidate": candidate_names,
+                "ai_recommendation": recommendation,
+                "recruiter_decision": override_decision,
+                "score": final_score,
+                "notes": recruiter_notes,
+                "timestamp": str(datetime.now())
+            }
+
+            filename = f"recruiter_logs/{candidate_names.replace(' ', '_')}.json"
+
+            with open(filename, "w") as f:
+                json.dump(review_data, f, indent=4)
+
+            st.success("Recruiter review saved successfully.")
+
+            with open(filename, "r") as f:
+                st.download_button(
+                    label="⬇ Download Review JSON",
+                    data=f,
+                    file_name=f"{candidate_names.replace(' ', '_')}_review.json",
+                    mime="application/json",
+                    key=f"download_review_{candidate_names}"
+                )
 
         # =================================================
         # SKILLS
