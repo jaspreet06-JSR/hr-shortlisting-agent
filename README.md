@@ -48,7 +48,7 @@ Uses a 5-dimension evaluation rubric:
 ![Analytics](screenshots/analytics.png)
 
 ## Recruiter Override
-![RecruiterOverride](screenshots/recruiter override.png)
+![RecruiterOverride](screenshots/recruiter_override.png)
 
 ## 🎥 Demo Video
 
