@@ -10,6 +10,20 @@ from fpdf import FPDF
 from scoring.rubric_scorer import evaluate_candidate
 from parsers.pdf_parser import extract_text_from_pdf
 from scoring.matcher import match_skills
+
+# =========================================================
+# CLEAN OLD RECRUITER LOGS ON START
+# =========================================================
+
+if not os.path.exists("recruiter_logs"):
+    os.makedirs("recruiter_logs")
+
+for file in os.listdir("recruiter_logs"):
+    file_path = os.path.join("recruiter_logs", file)
+
+    if os.path.isfile(file_path):
+        os.remove(file_path)
+        
 # =========================================================
 # PAGE CONFIG
 # =========================================================
