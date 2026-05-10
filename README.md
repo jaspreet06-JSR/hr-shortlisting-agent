@@ -7,15 +7,24 @@ AI-powered recruitment assistant that automates resume screening, candidate rank
 # 📌 Features
 
 ## ✅ Job Description Parsing
+
 - Extracts skills and requirements from JD PDFs
 - Detects technical skills automatically
+- AI-assisted job requirement analysis
+
+---
 
 ## ✅ Resume Parsing
+
 - Supports multiple resume uploads
 - PDF resume extraction
 - Candidate skill analysis
+- LinkedIn/profile enrichment support
+
+---
 
 ## ✅ AI Candidate Evaluation
+
 Uses a 5-dimension evaluation rubric:
 
 | Dimension | Weight |
@@ -30,20 +39,28 @@ Uses a 5-dimension evaluation rubric:
 
 # 📊 Dashboard Features
 
-## Candidate Dashboard
+## 👤 Candidate Dashboard
+
 - Match percentage
 - Matched skills
 - Missing skills
 - AI recommendation
+- AI justification feedback
 - Radar charts
 - Pie charts
+- Profile bonus scoring
 
-## Recruiter Analytics
+---
+
+## 🏆 Recruiter Analytics
+
 - Candidate leaderboard
 - Score distribution
 - Recruiter override system
+- Recruiter review logging
 - Export CSV reports
 - Downloadable recruiter reviews
+- Candidate comparison analytics
 
 ---
 
@@ -54,28 +71,44 @@ Uses a 5-dimension evaluation rubric:
 - Rule-based scoring engine
 - Recruiter override support
 - AI recommendation generation
+- LinkedIn/profile enrichment scoring
+- Justification-based evaluation
+- Vector embedding workflow
 
 ---
 
 # 🔒 Security Measures
 
-## API Key Protection
+## 🔑 API Key Protection
+
 - API keys stored using `.env`
 - No hardcoded credentials
 
-## Prompt Injection Mitigation
+---
+
+## 🛡 Prompt Injection Mitigation
+
 - User inputs sanitized before AI processing
 - Structured prompts reduce injection risks
 
-## Hallucination Reduction
+---
+
+## 🧾 Hallucination Reduction
+
 - Scores generated using deterministic rubric system
 - Rule-based validation added
 
-## PII Protection
+---
+
+## 🔐 PII Protection
+
 - Resume data processed temporarily
 - No permanent storage of sensitive candidate data
 
-## Secure Recruiter Reviews
+---
+
+## 📁 Secure Recruiter Reviews
+
 - Recruiter logs stored locally as JSON
 - No external sharing of candidate information
 
@@ -83,21 +116,24 @@ Uses a 5-dimension evaluation rubric:
 
 # 🏗️ Architecture
 
-## Workflow
+## 🔄 Workflow
 
 1. Upload Job Description
-2. Extract JD skills
-3. Upload candidate resumes
-4. Parse resume text
-5. Match candidate skills
-6. Run AI rubric evaluation
-7. Generate recruiter analytics
-8. Export reports
+2. Extract JD Skills
+3. Upload Candidate Resumes
+4. Parse Resume Text
+5. Match Candidate Skills
+6. Run AI Rubric Evaluation
+7. Generate Recruiter Analytics
+8. Export Reports
 
 ---
+
 # 🏛️ System Architecture
 
 ![Architecture Diagram](diagrams/architecture.png)
+
+---
 
 # ⚙️ Tech Stack
 
@@ -109,6 +145,8 @@ Uses a 5-dimension evaluation rubric:
 | AI | Gemini API |
 | Data Processing | Pandas |
 | PDF Reports | FPDF |
+| Embeddings | Vector Similarity |
+| Logging | JSON Audit Logs |
 | Deployment | Streamlit Cloud |
 
 ---
@@ -127,68 +165,29 @@ Uses a 5-dimension evaluation rubric:
 
 ```bash
 hr-shortlisting-agent/
-│
+
 ├── app.py
 ├── .env
 ├── requirements.txt
-│
+├── README.md
+
 ├── parsers/
 │   ├── pdf_parser.py
 │   └── llm_parser.py
-│
+
 ├── scoring/
 │   ├── matcher.py
 │   ├── ai_scorer.py
 │   └── rubric_scorer.py
-│
+
 ├── recruiter_logs/
 ├── reports/
-└── README.md
-```
+├── diagrams/
+│   └── architecture.png
 
----
+├── screenshots/
 
-# 🚀 Local Setup
-
-## Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-## Add Environment Variables
-
-Create `.env`
-
-```env
-GOOGLE_API_KEY=your_api_key_here
-```
-
-## Run Application
-
-```bash
-streamlit run app.py
-```
-
----
-
-# ☁️ Deployment
-
-Deployed using Streamlit Cloud.
-
----
-
-# 📌 Future Improvements
-
-- LinkedIn profile parsing
-- LangChain integration
-- Semantic embedding search
-- Vector database integration
-- Interview scheduling AI
-- ATS integration
-
----
 
 # 👨‍💻 Author
 
-Developed as an AI-powered HR recruitment automation system internship project.
+- Developed as an AI-powered recruitment and resume intelligence platform for internship evaluation and recruiter analytics automation.

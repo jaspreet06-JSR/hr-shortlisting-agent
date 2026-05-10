@@ -171,6 +171,12 @@ resume_files = st.file_uploader(
     accept_multiple_files=True
 )
 
+linkedin_text = st.text_area(
+    "🔗 Optional LinkedIn / Portfolio Text",
+    placeholder="Paste LinkedIn summary, portfolio description, GitHub bio, achievements, etc.",
+    height=120
+)
+
 # =========================================================
 # MAIN APP
 # =========================================================
@@ -229,6 +235,9 @@ if jd_file and resume_files:
             resume_file
         )
 
+        if linkedin_text:
+            resume_text += f"\n{linkedin_text}"
+
         matched_skills, missing_skills, score = match_skills(
             jd_skills,
             resume_text,
@@ -240,19 +249,54 @@ if jd_file and resume_files:
             jd_text
         )
         final_score = rubric_result["total_score"]
-        recommendation = rubric_result["recommendation"]
+        profile_bonus = 0
+        achievement_keywords = [
+            "open source",
+            "leadership",
+            "hackathon",
+            "research",
+            "published",
+            "github",
+            "portfolio",
+            "team lead",
+            "internship",
+            "certification"
+        ]
+        linkedin_lower = linkedin_text.lower() if linkedin_text else ""
+
+        bonus_hits = sum(
+            1 for keyword in achievement_keywords
+            if keyword in linkedin_lower
+        )
+
+        profile_bonus = min(bonus_hits * 1.5, 10)
+
+        final_score += profile_bonus
+
+        final_score = min(final_score, 100)
         dimension_scores = rubric_result["scores"]
         justifications = rubric_result["justifications"]
 
         if score < min_score:
             continue
 
+        recommendation = (
+            "Strong Hire" if final_score >= 85 else
+            "Hire" if final_score >= 70 else
+            "Consider" if final_score >= 50 else
+            "Reject"
+        )
+
         processed_candidates.append({
             "name": resume_file.name,
             "resume_text": resume_text,
             "matched_skills": matched_skills,
             "missing_skills": missing_skills,
-            "score": score
+            "score": score,
+            "final_score": final_score,
+            "recommendation": recommendation,
+            "dimension_scores": dimension_scores,
+            "justifications": justifications
         })
 
     if not processed_candidates:
@@ -280,6 +324,10 @@ if jd_file and resume_files:
     matched_skills = selected_candidate["matched_skills"]
     missing_skills = selected_candidate["missing_skills"]
     score = selected_candidate["score"]
+    final_score = selected_candidate["final_score"]
+    recommendation = selected_candidate["recommendation"]
+    dimension_scores = selected_candidate["dimension_scores"]
+    justifications = selected_candidate["justifications"]
     resume_text = selected_candidate["resume_text"]
 
     # =====================================================
@@ -308,16 +356,19 @@ if jd_file and resume_files:
         # METRICS
         # =================================================
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            st.metric("Final Score", f"{final_score}%")
+            st.metric("Final Score", f"{final_score:.2f}%")
 
         with col2:
             st.metric("Matched Skills", len(matched_skills))
 
         with col3:
             st.metric("Recommendation", recommendation)
+
+        with col4:
+            st.metric("Profile Bonus", f"{profile_bonus:.1f} pts")    
 
         st.divider()
 
