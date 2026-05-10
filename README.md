@@ -36,6 +36,20 @@ Uses a 5-dimension evaluation rubric:
 | Communication Quality | 10% |
 
 ---
+# 📸 Screenshots
+
+## Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+## Leaderboard
+![Leaderboard](screenshots/leaderboard.png)
+
+## Analytics
+![Analytics](screenshots/analytics.png)
+
+## Recruiter Override
+![Recruiter Override](screenshots/recruiter override.png)
+
 ## 🎥 Demo Video
 
 [Watch Demo](YOUR_VIDEO_LINK)

@@ -449,6 +449,9 @@ if jd_file and resume_files:
             if not os.path.exists("recruiter_logs"):
                os.makedirs("recruiter_logs")
 
+               for file in os.listdir("recruiter_logs"):
+                os.remove(f"recruiter_logs/{file}")
+
             filename = f"recruiter_logs/{candidate_name.replace(' ', '_')}.json"
 
             with open(filename, "w") as f:
